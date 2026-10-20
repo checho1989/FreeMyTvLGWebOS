@@ -67,6 +67,32 @@ stays, and Free My TV opens with a long press of a number key.
    days; *EXTEND* in that app renews it (if it runs out, the TV removes developer apps, and installing again brings it
    back). `--uninstall` removes Free My TV.
 
+### A rooted LG TV (Homebrew Channel)
+
+If the TV is already rooted (RootMyTV, the webOS Homebrew Channel) there's no LG account and no 40-day limit:
+`python3 webos/install.py <IP> --root` instead of step 5 above. On the TV, open Homebrew Channel and turn on SSH in
+its settings first. The first time it needs the TV's root password, typed by them in their own terminal (same rule
+as the passphrase above): Homebrew Channel's default is `alpine`, until a key is installed (then `~/.ssh/
+freemytv_webos_root_<IP>` is reused). `--root --uninstall` removes it.
+
+Add `--home` to make Free My TV the Home key's app, the way it already is on Android TV: `webos/service/` is a
+small webOS service, elevated through Homebrew Channel's `elevate-service`, that keeps Free My TV in front
+whenever the TV asks for the stock home by name (at power-on, or when an app closes with nothing else to show) —
+the same idea as the Android `Watchdog`, with the same kind of limit (3 redirects per 30 s) so a broken build
+can't loop (same technique as [guntiss/webos-galaxy-launcher](https://github.com/guntiss/webos-galaxy-launcher),
+MIT). Three independent ways back to LG's home, so it's never stuck on one:
+
+- `python3 webos/install.py <IP> --root --switch-home` toggles it from the computer, right now, no reinstall needed.
+- A remote button, through [LG Input Mapper](https://github.com/anned20/lginputmapper) (install it from Homebrew
+  Channel's app store): bind one to an `exec` action running
+  `luna-send -n 1 luna://io.freemytv.service/switchHome '{}' </dev/null`. Home, D-pad, OK, Back, Settings, Power,
+  volume and channel can't be remapped by that tool, so pick another button (e.g. one of the streaming-app ones).
+- `--uninstall` (with `--home` or without; it's harmless either way) always restores LG's home first, over SSH,
+  before removing the app — this works even if the Home key, the app and the remote button are all unusable.
+
+If Free My TV is ever removed some other way while it's still the Home app, the Home key opens nothing until the
+next reboot, when the boot hook (`webos/service/boot-hook.sh`) notices, restores LG's home and removes itself.
+
 ## Installing it on a Samsung TV (Tizen)
 
 On Samsung it's an app too (2017 and newer, Tizen 3+), installed through Samsung's Developer Mode; Samsung's home
@@ -168,7 +194,9 @@ HDMI (Chromecast with Google TV, Google TV Streamer, onn 4K, NVIDIA Shield). Set
   Android belongs there too. Text: `tr(pt, en, es)`. Built without a city (`--generic`), `web/zones.js`
   (`tools/make_zones.py`, from the tz database) turns the TV's time zone into the city, the currency and the region.
   `tools/webapp.py` is what both builds share. Preview: `python3 webos/build.py --preview` (or `tizen/build.py`), then
-  open `out/webos/index.html` in a browser (a stand-in lists sample apps).
+  open `out/webos/index.html` in a browser (a stand-in lists sample apps). `webos/service/` is the Home-mode
+  service for rooted LG TVs (see *A rooted LG TV* above); `webos/build.py` packs it into the same `.ipk`, at
+  `usr/palm/services/io.freemytv.service/`, alongside the web app.
 
 ## Always
 

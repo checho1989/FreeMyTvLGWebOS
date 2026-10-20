@@ -170,15 +170,25 @@ var TV = (function () {
         done(SAMPLE.map(function (s) { return {id: s[0], title: s[1], icon: '', color: s[2]}; }));
         return;
       }
-      luna('luna://com.webos.applicationManager/listLaunchPoints', {}, function (res) {
+      function fromPoints(points) {
         var out = [];
-        var points = res && res.launchPoints ? res.launchPoints : [];
         for (var i = 0; i < points.length; i++) {
           var p = points[i];
           if (!p.id || p.id === self || HIDDEN.test(p.id)) continue;
-          out.push({id: p.id, title: p.title || p.id, icon: p.largeIcon || p.icon || '', color: p.bgColor || p.iconColor || ''});
+          var icon = p.largeIcon || p.icon || '';
+          if (icon && !/^[a-z][a-z0-9+.-]*:/i.test(icon)) icon = 'file://' + icon;
+          out.push({id: p.id, title: p.title || p.id, icon: icon, color: p.color || p.bgColor || p.iconColor || ''});
         }
-        done(out);
+        return out;
+      }
+      // Installed as root without Developer Mode, the page's own Luna calls can't reach
+      // listLaunchPoints ("Denied method call"); the bundled service, elevated, can. Installs under
+      // real Developer Mode have no such service running, so this falls back to asking directly.
+      luna('luna://' + self + '.service/listApps', {}, function (res) {
+        if (res && res.apps) { done(fromPoints(res.apps)); return; }
+        luna('luna://com.webos.applicationManager/listLaunchPoints', {}, function (res2) {
+          done(fromPoints(res2 && res2.launchPoints ? res2.launchPoints : []));
+        });
       });
     },
 

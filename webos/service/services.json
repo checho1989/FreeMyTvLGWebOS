@@ -1,0 +1,7 @@
+{
+  "id": "io.freemytv.service",
+  "description": "Keeps Free My TV as the Home key's app, and switches back to LG's home.",
+  "services": [
+    {"name": "io.freemytv.service"}
+  ]
+}

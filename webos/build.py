@@ -66,20 +66,32 @@ def build(preview, config):
         with open(os.path.join(ROOT, 'webos', name), 'rb') as f:
             app[name] = f.read()
 
-    base = 'usr/palm/applications/' + app_id
-    entries = [('usr', None), ('usr/palm', None), ('usr/palm/applications', None), (base, None)]
-    dirs = set()
-    for path in sorted(app):
-        parent = os.path.dirname(path)
-        if parent and parent not in dirs:
-            dirs.add(parent)
-            entries.append((base + '/' + parent, None))
-        entries.append((base + '/' + path, app[path]))
-    package = json.dumps({'id': app_id, 'version': version, 'app': app_id}, indent=2).encode('utf-8')
+    service_id = app_id + '.service'
+    service_dir = os.path.join(ROOT, 'webos', 'service')
+    service = {}
+    for name in ('service.js', 'package.json', 'services.json', 'boot-hook.sh'):
+        with open(os.path.join(service_dir, name), 'rb') as f:
+            service[name] = f.read()
+
+    def tree(base, files):
+        entries = []
+        dirs = set()
+        for path in sorted(files):
+            parent = os.path.dirname(path)
+            if parent and parent not in dirs:
+                dirs.add(parent)
+                entries.append((base + '/' + parent, None))
+            entries.append((base + '/' + path, files[path]))
+        return entries
+
+    entries = [('usr', None), ('usr/palm', None), ('usr/palm/applications', None), ('usr/palm/services', None)]
+    entries += [('usr/palm/applications/' + app_id, None)] + tree('usr/palm/applications/' + app_id, app)
+    entries += [('usr/palm/services/' + service_id, None)] + tree('usr/palm/services/' + service_id, service)
+    package = json.dumps({'id': app_id, 'version': version, 'app': app_id, 'services': [service_id]}, indent=2).encode('utf-8')
     entries += [('usr/palm/packages', None), ('usr/palm/packages/' + app_id, None),
                 ('usr/palm/packages/' + app_id + '/packageinfo.json', package)]
 
-    size = sum(len(d) for d in app.values()) + len(package)
+    size = sum(len(d) for d in app.values()) + sum(len(d) for d in service.values()) + len(package)
     control = ('Package: %s\nVersion: %s\nSection: misc\nPriority: optional\nArchitecture: all\nInstalled-Size: %d\n'
                'Maintainer: Free My TV <https://freemytv.io>\nDescription: A fast, ad-free home screen.\n'
                'webOS-Package-Format-Version: 2\nwebOS-Packager-Version: 1.0.0\n' % (app_id, version, size))
