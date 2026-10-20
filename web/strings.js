@@ -19,12 +19,8 @@ var I18N = (function () {
     "No weather data right now.": "Gerade keine Wetterdaten.",
     "Sunrise ": "Sonnenaufgang ",
     "Sunset ": "Sonnenuntergang ",
-    "Crypto": "Krypto",
-    "24h change": "Änderung in 24 h",
-    "For You": "Für dich",
     "Couldn't open ": "Konnte nicht öffnen: ",
     "Couldn't open TV Settings": "Die TV-Einstellungen ließen sich nicht öffnen",
-    "Dollar": "Dollar",
     "Series": "Serie",
     "Language": "Sprache",
     "Temperature": "Temperatur",
@@ -33,16 +29,12 @@ var I18N = (function () {
     "Light": "Hell",
     "Dark": "Dunkel",
     "Weather widget": "Wetter-Widget",
-    "Quotes widget": "Kurs-Widget",
     "On": "An",
     "Off": "Aus",
     "Shelf": "Leiste",
     "On · ": "In der Leiste · ",
     "OK or the arrows change the value.": "OK oder die Pfeiltasten ändern den Wert.",
     "OK adds or removes · ← → change the order": "OK fügt hinzu oder entfernt · ← → verschieben",
-    "Explore": "Entdecken",
-    "Movies": "Filme",
-    "Shows": "Serien",
     "Clear": "Klar",
     "Mostly Sunny": "Überwiegend sonnig",
     "Mostly Clear": "Überwiegend klar",
@@ -59,9 +51,7 @@ var I18N = (function () {
   /** German by the English; text built at runtime by its English pattern. */
   function germanText(en) {
     if (Object.prototype.hasOwnProperty.call(german, en)) return german[en];
-    var m = /^(\d+) (min|h) ago$/.exec(en);
-    if (m) return 'vor ' + m[1] + (m[2] === 'min' ? ' Min.' : ' Std.');
-    m = /^(\d+) seasons?$/.exec(en);
+    var m = /^(\d+) seasons?$/.exec(en);
     if (m) return m[1] + (m[1] === '1' ? ' Staffel' : ' Staffeln');
     m = /^H:(\S+)(\s+)L:(\S+)$/.exec(en);
     if (m) return 'H:' + m[1] + m[2] + 'T:' + m[3];
@@ -83,11 +73,7 @@ var I18N = (function () {
     "No weather data right now.": "Сейчас нет данных о погоде.",
     "Sunrise ": "Восход ",
     "Sunset ": "Закат ",
-    "Crypto": "Криптовалюты",
-    "24h change": "изменение за 24 ч",
-    "For You": "Для вас",
     "Couldn't open ": "Не удалось открыть ",
-    "Dollar": "Доллар",
     "Series": "Сериал",
     "now": "сейчас",
     "Language": "Язык",
@@ -97,14 +83,10 @@ var I18N = (function () {
     "Light": "Светлая",
     "Dark": "Тёмная",
     "Weather widget": "Виджет погоды",
-    "Quotes widget": "Виджет котировок",
     "On": "Вкл.",
     "Off": "Выкл.",
     "Shelf": "Избранные приложения",
     "OK or the arrows change the value.": "Нажмите OK или стрелки, чтобы изменить значение.",
-    "Explore": "Обзор",
-    "Movies": "Фильмы",
-    "Shows": "Сериалы",
     "Clear": "Ясно",
     "Mostly Sunny": "Малооблачно",
     "Mostly Clear": "Малооблачно",
@@ -131,9 +113,7 @@ var I18N = (function () {
 
   function russianText(en) {
     if (Object.prototype.hasOwnProperty.call(russian, en)) return russian[en];
-    var m = /^(\d+) (min|h) ago$/.exec(en);
-    if (m) return m[1] + (m[2] === 'min' ? ' мин назад' : ' ч назад');
-    m = /^The shelf holds up to (\d+) apps\.$/.exec(en);
+    var m = /^The shelf holds up to (\d+) apps\.$/.exec(en);
     if (m) return 'В избранное можно добавить не более ' + m[1] + ' приложений.';
     return en;
   }
