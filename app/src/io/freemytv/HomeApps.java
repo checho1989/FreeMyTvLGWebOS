@@ -106,6 +106,7 @@ final class HomeApps {
             "com.mstar.android.tv.disclaimercustomization",   // Philco: disclaimer
             "com.homwee.chtvmanager",               // Philco: TV Manager (cleaner)
             "com.homwee.multiscreenshare",          // Philco: Midiacast (Chromecast still works)
+            "com.xiaomi.mitv.manualhelp",           // Xiaomi: user manual
             "com.google.android.videos",            // Google Play Movies (discontinued)
             "com.disney.starplus",                  // Star+ (merged into Disney+)
             "com.tcl.exhibit"));                    // TCL: T-Exhibition
@@ -323,7 +324,9 @@ final class HomeApps {
     static List<Item> others(Context c) {
         PackageManager pm = c.getPackageManager();
         Set<String> skip = new HashSet<>();
-        for (String[] d : SHELF) skip.add(d[2]);
+        // A built-in app is skipped only while it is on the shelf: one the person took off must still be listed here.
+        List<String> onShelf = shelfPackages(c);
+        for (String[] d : SHELF) if (onShelf.contains(d[2])) skip.add(d[2]);
         skip.addAll(java.util.Arrays.asList(LIVE_TV_APPS));
         skip.add(c.getPackageName());
         skip.addAll(HIDDEN);

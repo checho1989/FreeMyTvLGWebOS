@@ -23,6 +23,9 @@ final class German {
             case "For You": return "Für dich";
             case "Couldn't open ": return "Konnte nicht öffnen: ";
             case " of ": return " von ";
+            case "← → to move · OK to drop · Back to cancel": return "← → verschieben · OK ablegen · Zurück abbrechen";
+            case "Moving ": return "Verschiebe ";
+            case ", position ": return ", Position ";
             case ", tab ": return ", Tab ";
             case " of 3": return " von 3";
             case "Dollar": return "Dollar";
@@ -93,6 +96,12 @@ final class German {
             case "Light": return "Hell";
             case "Dark": return "Dunkel";
             case "Weather widget": return "Wetter-Widget";
+            // What TalkBack reads on the drawer's weather card (#47)
+            case ". High ": return ". Höchstwert ";
+            case ", low ": return ", Tiefstwert ";
+            case " Next hours: ": return " Nächste Stunden: ";
+            case " Sunrise ": return " Sonnenaufgang ";
+            case " Sunset ": return " Sonnenuntergang ";
             case "City": return "Stadt";
             case "Searching…": return "Suche…";
             case "Type the city's name": return "Namen der Stadt eingeben";
@@ -117,6 +126,7 @@ final class German {
             case "OK or the arrows change the value.": return "OK oder die Pfeiltasten ändern den Wert.";
             case "OK picks, Back cancels.": return "OK wählt aus, Zurück bricht ab.";
             case "Disney and Globoplay: the TV itself controls those buttons.": return "Disney und Globoplay: Diese Tasten steuert der Fernseher selbst.";
+            case "YouTube, Prime Video and Google Play: the TV itself controls those buttons.": return "YouTube, Prime Video und Google Play: Diese Tasten steuert der Fernseher selbst.";
             case "These are the TCL remote's buttons: on this TV, the buttons work as they always did.": return "Das sind die Tasten der TCL-Fernbedienung: Auf diesem Fernseher funktionieren sie wie immer.";
             default:
                 if (english.startsWith("Free My TV is on: new home screen and screensaver, ")) {
