@@ -11,6 +11,8 @@ and, on a rooted TV, no LG account, no 40-day limit, and Free My TV as the TV's 
 
 [Install (Developer Mode)](#install-developer-mode) · [Install (rooted, root access)](#install-rooted-tv-homebrew-channel) · [Debloat](#debloat) · [Settings](#settings) · [How it works](#how-it-works) · [Credits](#credits)
 
+<img src=".github/preview-webos.png" width="820" alt="The Free My TV home screen on LG webOS: the clock, an Atlético Nacional widget with its next matches and last result, and the glass shelf with TV en Vivo leading the apps">
+
 </div>
 
 ## About this fork
