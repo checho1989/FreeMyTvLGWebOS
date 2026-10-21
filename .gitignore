@@ -3,6 +3,9 @@ config.properties
 *.keystore
 *.idsig
 
+# Your own wallpaper/screensaver photos, never in a public repo
+family-photos/
+
 # Build output
 out/
 *.apk

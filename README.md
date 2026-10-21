@@ -31,8 +31,13 @@ and what changed here:
   the TV's `listLaunchPoints` or read other apps' icon files — the bundled service does both, elevated, so the
   shelf and *All Apps* show real icons either way.
 - **A cleaner look.** Each app is a square icon on glass, like its own badge, with its name below it — not a small
-  logo centered on a flat brand-color card. No title or tabs at the top (that corner is free for a future widget).
-  No crypto prices — removed entirely, nowhere on the home screen, the drawer or Home Settings.
+  logo centered on a flat brand-color card. No title or tabs at the top. No crypto prices — removed entirely,
+  nowhere on the home screen, the drawer or Home Settings.
+- **An Atlético Nacional widget**, where the title used to be: the next 4 matches, the last result and the league
+  position — see [Settings](#settings).
+- **Your own photos** as the background and the screensaver, rotating — see
+  [Your own photos as the background and screensaver](#your-own-photos-as-the-background-and-screensaver).
+- **"TV en Vivo" always leads the shelf**, besides its own button up top.
 
 ## Install (Developer Mode)
 
@@ -101,6 +106,7 @@ the TV, in *Free My TV* → *Home Settings*, and the TV's choice wins:
 | `city` | The name on the weather card | `Weather` |
 | `language` | `auto` (follows the TV), `en`, `es`, `pt`, `de` or `ru` | `auto` |
 | `temperature` | `C`, `F` or `auto` | `auto` |
+| `football_key` | Your free [Highlightly](https://highlightly.net/football-api/) key, for Atlético Nacional's next 4 matches | empty |
 
 Changed something? Run `python3 webos/build.py` and install again.
 
@@ -109,6 +115,13 @@ Changed something? Run `python3 webos/build.py` and install again.
 Free, and it takes two minutes: create an account at [themoviedb.org](https://www.themoviedb.org/signup), then open
 [Settings → API](https://www.themoviedb.org/settings/api) and request a developer key. Paste the *API Read Access
 Token* (or the *API Key*) after `tmdb_key=`. It's your key: `config.properties` stays out of git.
+
+### Your own photos as the background and screensaver
+
+Drop images into a `family-photos/` folder at the repo's root (any `.jpg`, `.jpeg`, `.png` or `.webp`) and rebuild:
+they replace the picks' photos as the background (rotating every 10 minutes) and the screensaver (rotating, no
+title underneath). That folder is gitignored — the photos are bundled straight into the `.ipk` you install over
+SSH, never into git or GitHub.
 
 ## How it works
 
@@ -127,11 +140,17 @@ Token* (or the *API Key*) after `tmdb_key=`. It's your key: `config.properties` 
 - **On LG, [`web/tv.js`](web/tv.js)** talks to the TV over Luna (its service bus), the same calls LG's own launcher
   makes, trying the bundled service first and falling back to asking the page directly (which still works under
   real Developer Mode).
+- **The Atlético Nacional widget** ([`web/data.js`](web/data.js)) mixes two free APIs: TheSportsDB (no key) for the
+  crest, the last result and the league table, and Highlightly (your own key) for the next 4 matches — two calls
+  (home and away; there's no single "either side" filter), throttled to once a day, or every 6 hours once the next
+  match is within 2 days, so a key shared across several TVs stays well under its 100-requests-a-day limit.
 
 ## Privacy
 
-No accounts, no analytics, no tracking. The app talks to TMDB and Open-Meteo (with the coordinates you set, or
-your time zone's main city). Your settings stay on your computer and your TV.
+No accounts, no analytics, no tracking. The app talks to TMDB, Open-Meteo (with the coordinates you set, or your
+time zone's main city), TheSportsDB (a shared free key, no sign-up) and, only with your own `football_key` set,
+Highlightly. Your settings stay on your computer and your TV; your own photos (`family-photos/`) stay out of git
+entirely and go straight into the `.ipk` you install.
 
 ## Credits
 
@@ -147,6 +166,8 @@ your time zone's main city). Your settings stay on your computer and your TV.
   [guntiss/webos-galaxy-launcher](https://github.com/guntiss/webos-galaxy-launcher) (MIT).
 - This product uses the TMDB API but is not endorsed or certified by [TMDB](https://www.themoviedb.org/).
 - Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0).
+- Atlético Nacional's crest, last result and league position from [TheSportsDB](https://www.thesportsdb.com/); its
+  next 4 matches from [Highlightly](https://highlightly.net/).
 - Icons: [Material Symbols](https://fonts.google.com/icons) (Apache 2.0). Font: [Inter](https://rsms.me/inter/)
   (SIL OFL 1.1).
 - Not affiliated with LG or any streaming service. App names and logos belong to their owners.

@@ -200,6 +200,9 @@ HDMI (Chromecast with Google TV, Google TV Streamer, onn 4K, NVIDIA Shield). Set
   open `out/webos/index.html` in a browser (a stand-in lists sample apps). `webos/service/` is the Home-mode
   service for rooted LG TVs (see *A rooted LG TV* above); `webos/build.py` packs it into the same `.ipk`, at
   `usr/palm/services/io.freemytv.service/`, alongside the web app.
+- `family-photos/` (gitignored, never committed): any images there become the background and the screensaver,
+  rotating, in place of the picks' photos — `tools/webapp.py` bundles them into `photos/` and lists them in the
+  generated `photos.js`. Empty or missing, nothing changes.
 
 ## Always
 
