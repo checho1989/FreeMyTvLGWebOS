@@ -93,6 +93,18 @@ MIT). Three independent ways back to LG's home, so it's never stuck on one:
 If Free My TV is ever removed some other way while it's still the Home app, the Home key opens nothing until the
 next reboot, when the boot hook (`webos/service/boot-hook.sh`) notices, restores LG's home and removes itself.
 
+### Debloating a rooted LG TV
+
+`webos/debloat/debloat.sh` ([lucataco](https://gist.github.com/lucataco/7c303b443934008a9031a55cfca552ec), MIT,
+vendored unchanged) hides LG's bloat (ACR, ad overlays, demo/sample apps, promo tiles, the voice assistant, and
+more — grouped in categories), stops preloading apps the TV keeps resident in RAM, and turns off home-screen
+promotions and Live Plus (ACR), through `python3 webos/install.py <IP> --root --debloat*`:
+`--debloat-plan` previews, `--debloat` applies every category and installs a boot hook that re-applies it,
+`--debloat-status` shows what's currently changed, `--debloat-restore` undoes all of it. Nothing is deleted and
+the rootfs isn't touched (LG's own app-block list, the preload policy and a few settings only), so firmware
+updates install as on a stock TV. `webos/debloat/README.md` has the category table and what's protected (Home,
+Settings, Live TV, inputs, the browser, first-run setup, Homebrew Channel — never hidden, whatever's asked for).
+
 ## Installing it on a Samsung TV (Tizen)
 
 On Samsung it's an app too (2017 and newer, Tizen 3+), installed through Samsung's Developer Mode; Samsung's home

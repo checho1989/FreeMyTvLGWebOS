@@ -9,7 +9,7 @@
 Your apps as square icons on glass, trending picks, the weather at a glance, a look that follows the sunset —
 and, on a rooted TV, no LG account, no 40-day limit, and Free My TV as the TV's actual Home.
 
-[Install (Developer Mode)](#install-developer-mode) · [Install (rooted, root access)](#install-rooted-tv-homebrew-channel) · [Settings](#settings) · [How it works](#how-it-works) · [Credits](#credits)
+[Install (Developer Mode)](#install-developer-mode) · [Install (rooted, root access)](#install-rooted-tv-homebrew-channel) · [Debloat](#debloat) · [Settings](#settings) · [How it works](#how-it-works) · [Credits](#credits)
 
 </div>
 
@@ -38,6 +38,8 @@ and what changed here:
 - **Your own photos** as the background and the screensaver, rotating — see
   [Your own photos as the background and screensaver](#your-own-photos-as-the-background-and-screensaver).
 - **"TV en Vivo" always leads the shelf**, besides its own button up top.
+- **A debloat script for rooted TVs** — hides LG's bloat and ad/ACR overlays, stops background apps from
+  preloading, and turns off promotions and Live Plus (ACR); reversible — see [Debloat](#debloat).
 
 ## Install (Developer Mode)
 
@@ -92,6 +94,65 @@ If the TV is already rooted ([RootMyTV](https://github.com/RootMyTV/RootMyTV.git
    next reboot, when the boot hook notices, restores LG's home and removes itself.
 
 To remove it: `python3 webos/install.py 192.168.1.50 --root --uninstall`.
+
+## Debloat
+
+On a rooted TV, [`webos/debloat/debloat.sh`](webos/debloat) (vendored unchanged from
+[lucataco's gist](https://gist.github.com/lucataco/7c303b443934008a9031a55cfca552ec), MIT) hides LG's bloat, stops
+background apps from preloading, and turns off a handful of promotional settings. Nothing is deleted and the root
+filesystem isn't touched — only LG's own app block list, the preload policy and a few settings — so it's fully
+reversible, a few apps are never hidden no matter what (below), and firmware updates install as they would on a
+stock TV. The category table (what each one hides) and the full protected list are in
+[`webos/debloat/README.md`](webos/debloat/README.md).
+
+**Never hidden, whatever you ask for:** Home, Settings, Live TV, the HDMI inputs, the browser, first-run setup,
+Homebrew Channel, and anything else whose absence is known to break the TV's own UI.
+
+### 1. Preview — changes nothing
+
+```bash
+python3 webos/install.py 192.168.1.50 --root --debloat-plan
+```
+
+Prints every app the full run (every category) would hide, by ID and title, and how many. Nothing on the TV
+changes; run it as many times as you like.
+
+### 2. Apply
+
+```bash
+python3 webos/install.py 192.168.1.50 --root --debloat
+```
+
+Four things happen, in order:
+
+1. **Hides the bloat tiles** — writes LG's own `blockedSystemAppList`. Tiles disappear from the launcher without a
+   reboot on most firmware; the binaries stay on disk untouched.
+2. **Stops preloading** LG Channels and the browser — the step that actually frees RAM, since hiding a tile alone
+   doesn't stop the process. If either was already running, this closes it too.
+3. **Turns off settings**: home-screen promotions, sports alerts, promo videos, the promotional streamer, content
+   recommendations, and Live Plus (LG's automatic content recognition / ACR). Skips any that firmware doesn't
+   have, and anything already off.
+4. **Installs a boot hook** (`/var/lib/webosbrew/init.d/50-debloat`) that re-applies all of the above at every
+   reboot — LG's own app manager can otherwise rewrite the block list after a component update.
+
+### 3. Check what's changed
+
+```bash
+python3 webos/install.py 192.168.1.50 --root --debloat-status
+```
+
+Lists everything currently hidden (marked `ours` vs `LG/other`, so you can tell the two apart), whether the boot
+hook is installed, and whether preloading/settings have anything to restore.
+
+### 4. Undo, any time
+
+```bash
+python3 webos/install.py 192.168.1.50 --root --debloat-restore
+```
+
+Reverses all four steps, in reverse order: settings back to whatever they were before (not just "on" — the exact
+original value), preloading back on, every tile it hid brought back (apps LG's own firmware already blocked stay
+blocked), and the boot hook removed.
 
 ## Settings
 
@@ -164,6 +225,8 @@ entirely and go straight into the `.ipk` you install.
   [LG Input Mapper](https://github.com/anned20/lginputmapper).
 - The Home-mode service (replacing LG's home, with a watchdog and a safe way back) follows the same technique as
   [guntiss/webos-galaxy-launcher](https://github.com/guntiss/webos-galaxy-launcher) (MIT).
+- The debloat script is [lucataco](https://gist.github.com/lucataco/7c303b443934008a9031a55cfca552ec)'s, vendored
+  unchanged (MIT).
 - This product uses the TMDB API but is not endorsed or certified by [TMDB](https://www.themoviedb.org/).
 - Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0).
 - Atlético Nacional's crest, last result and league position from [TheSportsDB](https://www.thesportsdb.com/); its
