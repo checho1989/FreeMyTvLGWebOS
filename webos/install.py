@@ -8,6 +8,10 @@
     python3 webos/install.py 192.168.1.50 --root --home        # also make Free My TV the TV's Home
     python3 webos/install.py 192.168.1.50 --root --switch-home  # toggle Home between Free My TV and LG's, now
     python3 webos/install.py 192.168.1.50 --root --home --uninstall  # remove it and restore LG's Home
+    python3 webos/install.py 192.168.1.50 --root --debloat-plan  # preview what --debloat would hide
+    python3 webos/install.py 192.168.1.50 --root --debloat       # hide bloat, stop preloads, turn off ACR etc.
+    python3 webos/install.py 192.168.1.50 --root --debloat-status
+    python3 webos/install.py 192.168.1.50 --root --debloat-restore  # undo --debloat, all of it
 
 Developer Mode (default): install "Developer Mode" from the LG Content Store, sign in with a free LG developer
 account (webostv.developer.lge.com), turn on Dev Mode Status (the TV restarts), then turn on Key Server. The app
@@ -35,6 +39,17 @@ ways back to LG's home, each independent of the others:
 If Free My TV is ever removed another way (not through this script) while it's still the Home app, the Home key
 opens nothing until the next reboot, when the boot hook notices, restores LG's home and removes itself.
 
+--debloat* (needs --root): webos/debloat/debloat.sh (lucataco, MIT) hides LG's bloat (ACR, ad overlays, demo and
+sample apps, LG Channels and other promo tiles, the voice assistant and more — every category, since --debloat
+runs it with --only all), stops preloading apps that sit in RAM whether or not you open them, and turns off
+home-screen promotions, sports alerts, content recommendations and Live Plus (LG's ACR). Nothing is deleted and
+the root filesystem isn't touched, only LG's own app block list, the preload policy and a few settings — so it's
+fully reversible (--debloat-restore undoes all of it) and firmware updates install as on a stock TV. A few apps
+are never hidden regardless (Home, Settings, Live TV, inputs, the browser, first-run setup, Homebrew Channel) —
+see webos/debloat/README.md for the exact categories and what's protected. Re-applies at every boot until
+--debloat-restore (or --remove-boot-hook, by hand). Run --debloat-plan first to see what it would hide without
+changing anything.
+
 Either way the app is copied over SSH and installed with the TV's own installer (com.webos.appInstallService), the
 way LG's tools do it. Install flow based on FreeMyTvWebOS by danielthejoker18 (MIT); the Home-mode service follows
 the same technique as guntiss/webos-galaxy-launcher (MIT). Needs Python 3 and OpenSSH (ssh, ssh-keygen).
@@ -59,6 +74,8 @@ ELEVATE = '/media/developer/apps/usr/palm/services/org.webosbrew.hbchannel.servi
 BOOT_HOOK = '/var/lib/webosbrew/init.d/60-freemytv'
 DEVMODE_TEMP = '/media/developer/temp/freemytv.ipk'
 ROOT_TEMP = '/tmp/freemytv.ipk'
+DEBLOAT_SH = os.path.join(ROOT, 'webos', 'debloat', 'debloat.sh')
+DEBLOAT_TEMP = '/tmp/webos-debloat.sh'
 SSH_BASE_OPTS = ['-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=' + os.devnull, '-o', 'LogLevel=ERROR',
                  '-o', 'HostKeyAlgorithms=+ssh-rsa', '-o', 'PubkeyAcceptedKeyTypes=+ssh-rsa']
 
@@ -183,6 +200,23 @@ def switch_home(ip, key):
                   % (out.strip() or '(no answer)', ip))
 
 
+def debloat_copy(ip, key):
+    """Copies webos/debloat/debloat.sh (lucataco, MIT) to the TV, over the same root SSH."""
+    with open(DEBLOAT_SH, 'rb') as f:
+        copy = ssh(ip, key, 'cat > ' + DEBLOAT_TEMP, stdin=f, user='root', port=22)
+    if copy.returncode != 0:
+        sys.exit('Couldn\'t copy debloat.sh to the TV.')
+
+
+def debloat_run(ip, key, args):
+    """One debloat.sh command on the TV, its output printed as-is (it already explains what it did)."""
+    out = root_shell(ip, key, 'sh %s %s' % (DEBLOAT_TEMP, args))
+    text = ((out.stdout or '') + (out.stderr or '')).strip()
+    if text:
+        print(text)
+    return out
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     if not args or not re.match(r'^\d{1,3}(\.\d{1,3}){3}$', args[0]):
@@ -193,13 +227,36 @@ def main():
     root = '--root' in sys.argv
     home = '--home' in sys.argv
     switch = '--switch-home' in sys.argv
-    if (home or switch) and not root:
-        sys.exit('--home and --switch-home need --root: Home mode needs a service elevated through Homebrew Channel.')
+    debloat_plan = '--debloat-plan' in sys.argv
+    debloat = '--debloat' in sys.argv
+    debloat_restore = '--debloat-restore' in sys.argv
+    debloat_status = '--debloat-status' in sys.argv
+    debloat_any = debloat_plan or debloat or debloat_restore or debloat_status
+    if (home or switch or debloat_any) and not root:
+        sys.exit('--home, --switch-home and --debloat* need --root: they need a shell elevated through Homebrew Channel.')
     user, port, temp = ('root', 22, ROOT_TEMP) if root else ('prisoner', 9922, DEVMODE_TEMP)
     key = provision_root_key(ip) if root else fetch_devmode_key(ip)
 
     if switch:
         switch_home(ip, key)
+        return
+
+    if debloat_any:
+        debloat_copy(ip, key)
+        if debloat_status:
+            debloat_run(ip, key, '--status')
+        elif debloat_plan:
+            debloat_run(ip, key, '--plan --only all')
+        elif debloat:
+            debloat_run(ip, key, '--apply --only all')
+            debloat_run(ip, key, '--preload-off')
+            debloat_run(ip, key, '--settings-off')
+            debloat_run(ip, key, '--install-boot-hook --only all')
+        elif debloat_restore:
+            debloat_run(ip, key, '--settings-restore')
+            debloat_run(ip, key, '--preload-on')
+            debloat_run(ip, key, '--restore')
+            debloat_run(ip, key, '--remove-boot-hook')
         return
 
     if '--uninstall' in sys.argv:
