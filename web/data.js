@@ -128,6 +128,115 @@ var Data = (function () {
     });
   }
 
+  // MARK: - Atlético Nacional (TheSportsDB, a free shared key, no sign-up)
+
+  var NACIONAL_TEAM = '137607', NACIONAL_LEAGUE = '4497', NACIONAL_BADGE = 'https://r2.thesportsdb.com/images/media/team/badge/efl4o41576157720.png';
+  var NACIONAL_API = 'https://www.thesportsdb.com/api/v1/json/123/';
+  var nacional = null, nacionalAt = 0, fetchingNacional = false;
+  (function () {
+    var n = stored('nacional');
+    if (n) { nacional = n.body; nacionalAt = n.at; }
+  })();
+
+  /** One event (next or last), from the home team's side: the opponent, home/away, and the score if it's played. */
+  function nacionalMatch(e) {
+    if (!e) return null;
+    var home = e.idHomeTeam === NACIONAL_TEAM;
+    return {
+      at: e.strTimestamp ? Date.parse(e.strTimestamp + 'Z') : 0,
+      league: e.strLeague,
+      home: home,
+      opponent: home ? e.strAwayTeam : e.strHomeTeam,
+      opponentBadge: home ? e.strAwayTeamBadge : e.strHomeTeamBadge,
+      scoreFor: home ? e.intHomeScore : e.intAwayScore,
+      scoreAgainst: home ? e.intAwayScore : e.intHomeScore
+    };
+  }
+
+  function parseNacional(next, last, table) {
+    var row = null;
+    for (var i = 0; table && i < table.length; i++) if (table[i].idTeam === NACIONAL_TEAM) { row = table[i]; break; }
+    return {
+      next: nacionalMatch(next && next[0]),
+      last: nacionalMatch(last && last[0]),
+      rank: row ? +row.intRank : 0,
+      points: row ? +row.intPoints : 0,
+      played: row ? +row.intPlayed : 0,
+      form: row ? row.strForm || '' : ''
+    };
+  }
+
+  function refreshNacional() {
+    var now = Date.now();
+    if (fetchingNacional || (now - nacionalAt < 30 * 60000 && now >= nacionalAt)) return;
+    fetchingNacional = true;
+    get(NACIONAL_API + 'eventsnext.php?id=' + NACIONAL_TEAM, {}, function (e1, next) {
+      get(NACIONAL_API + 'eventslast.php?id=' + NACIONAL_TEAM, {}, function (e2, last) {
+        get(NACIONAL_API + 'lookuptable.php?l=' + NACIONAL_LEAGUE + '&s=' + new Date().getFullYear(), {}, function (e3, table) {
+          fetchingNacional = false;
+          if (e1 && e2 && e3) return; // every request failed (no internet): keep the stale cache
+          nacional = parseNacional((next || {}).events, (last || {}).results, (table || {}).table);
+          nacionalAt = Date.now();
+          store('nacional', {body: nacional, at: nacionalAt});
+          changed();
+        });
+      });
+    });
+  }
+
+  // MARK: - Atlético Nacional's next 4 matches (Highlightly: free, but needs the person's own key, like TMDB's;
+  // TheSportsDB's free key only ever gives the next 1). Highlightly's /matches has no single "this team, either
+  // side, upcoming" filter, so it's two calls (home and away) merged — see refreshFixtures.
+
+  var FOOTBALL_KEY = (CONFIG.footballKey || '').trim();
+  var FOOTBALL_API = 'https://soccer.highlightly.net/';
+  var FOOTBALL_TEAM = 968371; // Atlético Nacional's id in Highlightly (found once; a name search needs the exact
+                               // accented spelling and doesn't fall back, so it's not worth resolving at runtime)
+  var fixtures = null, fixturesAt = 0, fetchingFixtures = false;
+  (function () {
+    var f = stored('fixtures');
+    if (f) { fixtures = f.body; fixturesAt = f.at; }
+  })();
+
+  function footballGet(path, done) { get(FOOTBALL_API + path, {'x-rapidapi-key': FOOTBALL_KEY}, done); }
+
+  function fixtureFrom(m, home) {
+    return {
+      at: Date.parse(m.date),
+      home: home,
+      opponent: home ? m.awayTeam.name : m.homeTeam.name,
+      opponentBadge: home ? m.awayTeam.logo : m.homeTeam.logo
+    };
+  }
+
+  /** The free key's 100 requests a day are shared by every TV using it (even across homes), and a match is at
+   * most a few times a week — so check often only when one is close, and barely at all otherwise. */
+  function fixturesStaleness() {
+    if (!fixtures || !fixtures.length) return 0; // nothing yet: check right away
+    return fixtures[0].at - Date.now() < 2 * 86400000 ? 6 * 3600000 : 24 * 3600000;
+  }
+
+  function refreshFixtures() {
+    if (!FOOTBALL_KEY) return;
+    var now = Date.now();
+    if (fetchingFixtures || (now - fixturesAt < fixturesStaleness() && now >= fixturesAt)) return;
+    fetchingFixtures = true;
+    footballGet('matches?homeTeamId=' + FOOTBALL_TEAM + '&limit=10', function (e1, home) {
+      footballGet('matches?awayTeamId=' + FOOTBALL_TEAM + '&limit=10', function (e2, away) {
+        fetchingFixtures = false;
+        if (e1 && e2) return; // both failed (no internet, or a bad key): keep the stale cache
+        var upcoming = []
+          .concat((home && home.data || []).filter(function (m) { return m.state.description === 'Not started'; }).map(function (m) { return fixtureFrom(m, true); }))
+          .concat((away && away.data || []).filter(function (m) { return m.state.description === 'Not started'; }).map(function (m) { return fixtureFrom(m, false); }));
+        upcoming.sort(function (a, b) { return a.at - b.at; });
+        fixtures = upcoming.slice(0, 4);
+        fixturesAt = Date.now();
+        store('fixtures', {body: fixtures, at: fixturesAt});
+        changed();
+      });
+    });
+  }
+
   // MARK: - Picks (TMDB)
 
   var KEY = (CONFIG.tmdbKey || '').trim();
@@ -411,10 +520,13 @@ var Data = (function () {
     onChange: function (fn) { listeners.push(fn); },
     setApps: function (apps) { installed = apps; },
     appFor: appFor,
-    refresh: function () { refreshWeather(); refreshRecs(); },
+    refresh: function () { refreshWeather(); refreshNacional(); refreshFixtures(); refreshRecs(); },
     settingsChanged: function () { changed(); },
     get weather() { return weather; },
     get weatherAt() { return weatherAt; },
+    get nacional() { return nacional; },
+    get nacionalFixtures() { return fixtures; },
+    nacionalBadge: NACIONAL_BADGE,
     hasKey: function () { return !!KEY; },
     recsError: function () { return recsError; },
     picks: now,

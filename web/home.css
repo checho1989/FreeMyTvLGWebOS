@@ -220,6 +220,54 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .night #clock { color: #F5F5F7; }
 .night #clock .date { color: rgba(245, 245, 247, 0.62); }
 
+/* MARK: - Atlético Nacional: next match, last result, league position, next to the clock. A hero
+   card in the team's own green, like a shelf tile scaled up — with its crest as a watermark. */
+
+#nacional {
+  position: absolute;
+  left: 720px;
+  top: 262px;
+  width: 1120px;
+  height: 320px;
+  border-radius: 36px;
+  padding: 36px 40px;
+  box-sizing: border-box;
+  color: #FFF;
+  background: -webkit-linear-gradient(135deg, #1C6B3A, #0B3319);
+  background: linear-gradient(135deg, #1C6B3A, #0B3319);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3), inset 0 1.5px 0 rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  display: none;
+}
+.no-picks #nacional:not(.empty) { display: block; }
+#nacional .crest { position: absolute; right: -30px; top: -30px; width: 280px; height: 280px; opacity: 0.14; }
+#nacional .head { position: relative; height: 32px; }
+#nacional .head span:not(.rank) { position: absolute; left: 0; top: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; text-transform: uppercase; color: rgba(255, 255, 255, 0.75); }
+#nacional .rank { position: absolute; right: 0; top: 2px; font-size: 21px; font-weight: 600; color: rgba(255, 255, 255, 0.75); }
+#nacional .row.next, #nacional .row:not(.win):not(.loss):not(.draw) { position: relative; margin-top: 18px; height: 108px; }
+/* The next 4 matches (API-Football, with a free key — see config.properties), in place of the single row above. */
+#nacional .fixtures { position: relative; margin-top: 18px; height: 108px; }
+#nacional .fixture { position: absolute; top: 4px; width: 240px; }
+#nacional .fixture:nth-child(1) { left: 0; }
+#nacional .fixture:nth-child(2) { left: 266px; }
+#nacional .fixture:nth-child(3) { left: 532px; }
+#nacional .fixture:nth-child(4) { left: 798px; }
+#nacional .fixture .badge { position: absolute; left: 0; top: 0; width: 44px; height: 44px; }
+#nacional .fixture .opp { position: absolute; left: 54px; top: 0; right: 0; font-size: 21px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#nacional .fixture .when { position: absolute; left: 54px; top: 30px; right: 0; font-size: 17px; font-weight: 500; color: rgba(255, 255, 255, 0.68); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#nacional .row.win, #nacional .row.loss, #nacional .row.draw { position: absolute; left: 40px; right: 40px; bottom: 34px; height: 56px; border-top: 1px solid rgba(255, 255, 255, 0.22); padding-top: 16px; }
+#nacional .row .badge { position: absolute; left: 0; top: 2px; width: 64px; height: 64px; }
+#nacional .row.win .badge, #nacional .row.loss .badge, #nacional .row.draw .badge { top: 14px; width: 40px; height: 40px; }
+#nacional .row .text { position: absolute; left: 84px; top: 0; right: 0; }
+#nacional .row.win .text, #nacional .row.loss .text, #nacional .row.draw .text { left: 56px; }
+#nacional .row .match { font-size: 38px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#nacional .row .when { font-size: 23px; font-weight: 500; color: rgba(255, 255, 255, 0.7); margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#nacional .row.win .match, #nacional .row.loss .match, #nacional .row.draw .match { font-size: 24px; }
+#nacional .row.win .when, #nacional .row.loss .when, #nacional .row.draw .when { margin-top: 2px; }
+#nacional .row.win .match { color: #7CF0AA; }
+#nacional .row.loss .match { color: #FF9D94; }
+#nacional .form { display: none; }
+
 /* MARK: - Shelf: the glass bar with the apps, each in its brand color; focused, a tile grows 20% and rises. */
 
 #platter {
@@ -446,6 +494,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 #saver .clock .time { font-size: 150px; font-weight: 300; line-height: 1; letter-spacing: -0.02em; font-feature-settings: 'tnum'; }
 #saver .clock .date { margin-top: 10px; font-size: 34px; font-weight: 500; color: rgba(255, 255, 255, 0.82); }
 #saver .clock .title { margin-top: 18px; font-size: 26px; font-weight: 500; color: rgba(255, 255, 255, 0.65); }
+#saver .clock .title.hide { display: none; }
 
 /* MARK: - Toast */
 

@@ -12,7 +12,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 GENERIC = {'tmdbKey': '', 'tmdbRegion': '', 'latitude': '', 'longitude': '', 'city': '', 'language': 'auto',
-           'temperature': 'auto'}
+           'temperature': 'auto', 'footballKey': ''}
 
 
 def config_from_args(args):
@@ -52,7 +52,11 @@ def read_config(path):
         'city': values.get('city', ''),
         'language': values.get('language', 'auto') or 'auto',
         'temperature': values.get('temperature', 'auto') or 'auto',
+        'footballKey': values.get('football_key', ''),
     }
+
+
+PHOTO_EXT = ('.jpg', '.jpeg', '.png', '.webp')
 
 
 def files(config, made_by):
@@ -72,6 +76,17 @@ def files(config, made_by):
     for name in ('InterVariable.ttf', 'OFL.txt'):
         with open(os.path.join(ROOT, 'app', 'assets', 'fonts', name), 'rb') as f:
             out['fonts/' + name] = f.read()
+
+    photos = []
+    photos_dir = os.path.join(ROOT, 'family-photos')
+    if os.path.isdir(photos_dir):
+        for name in sorted(os.listdir(photos_dir)):
+            if not name.lower().endswith(PHOTO_EXT):
+                continue
+            with open(os.path.join(photos_dir, name), 'rb') as f:
+                out['photos/' + name] = f.read()
+            photos.append('photos/' + name)
+    out['photos.js'] = ('window.PHOTOS = %s;\n' % json.dumps(photos)).encode('utf-8')
     return out
 
 

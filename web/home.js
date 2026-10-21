@@ -104,6 +104,8 @@
 
   var apps = [], shelf = [], others = [], inputs = [];
 
+  var LIVE_TV_ID = 'com.webos.app.livetv'; // forced to lead the shelf below, besides its own round button up top
+
   function pickShelf() {
     var chosen = Prefs.shelf(), out = [];
     if (chosen) {
@@ -117,6 +119,14 @@
         }
       }
       if (!out.length) out = apps.slice(0, MAX_SHELF);
+    }
+    var live = null;
+    for (var k = 0; k < apps.length; k++) if (apps[k].id === LIVE_TV_ID) { live = apps[k]; break; }
+    if (live) {
+      var idx = out.indexOf(live);
+      if (idx >= 0) out.splice(idx, 1);
+      out.unshift(live);
+      if (out.length > MAX_SHELF) out.length = MAX_SHELF;
     }
     shelf = out;
     others = apps.filter(function (x) { return shelf.indexOf(x) < 0; });
@@ -213,13 +223,32 @@
     }
     st.card = Math.min(st.card, Math.max(0, list.length - 1));
     if (!list.length && st.zone === Z.CARDS) st.zone = Z.SHELF;
-    backdrop(list.length ? Data.image(list[0].backdrop, 'w300') : '');
+    if (!familyPhotos.length) backdrop(list.length ? Data.image(list[0].backdrop, 'w300') : '');
     updateFocus();
+  }
+
+  // MARK: - Family photos (family-photos/, bundled at build time into photos.js): the background and the
+  // screensaver, in place of the picks' photos, when there are any.
+
+  var familyPhotos = (window.PHOTOS || []).slice();
+  (function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1)), t = a[i];
+      a[i] = a[j];
+      a[j] = t;
+    }
+  })(familyPhotos);
+  var photoIndex = 0;
+
+  function rotateBackdrop() {
+    if (!familyPhotos.length) return;
+    backdrop(familyPhotos[photoIndex++ % familyPhotos.length]);
   }
 
   var bgUrl = null, bgFront = 'bgA';
 
-  /** The first pick's photo as the background: drawn tiny and stretched, it's already as soft as a heavy blur. */
+  /** The background: a family photo, or (without any) the first pick's — drawn tiny and stretched, already as
+   * soft as a heavy blur. */
   function backdrop(url) {
     if (url === bgUrl) return;
     bgUrl = url;
@@ -248,6 +277,62 @@
       c.lastChild.textContent = d.toLocaleDateString(I18N.locale(), {weekday: 'long', day: 'numeric', month: 'long'});
     } catch (e) {
       c.lastChild.textContent = d.toDateString();
+    }
+  }
+
+  // MARK: - Atlético Nacional
+
+  /** "Hoy", "Mañana" or a short date, in the current language. */
+  function matchDay(at) {
+    var d = new Date(at), now = new Date();
+    var days = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+    if (days === 0) return tr('Hoje', 'Today', 'Hoy');
+    if (days === 1) return tr('Amanhã', 'Tomorrow', 'Mañana');
+    try { return d.toLocaleDateString(I18N.locale(), {weekday: 'short', day: 'numeric', month: 'short'}); } catch (e) { return d.toDateString(); }
+  }
+
+  function renderNacional() {
+    var box = $('nacional'), n = Data.nacional, fx = Data.nacionalFixtures;
+    box.innerHTML = '';
+    if (!n || (!n.next && !n.last && !n.rank)) { setClass(box, 'empty', true); return; }
+    setClass(box, 'empty', false);
+    var head = el('div', 'head', box);
+    el('img', 'crest', head).src = Data.nacionalBadge;
+    el('span', '', head, 'Atlético Nacional');
+    if (n.rank) {
+      el('span', 'rank', head, ordinal(n.rank) + ' · ' + n.points + ' ' + tr('pts', 'pts', 'pts'));
+    }
+    if (fx && fx.length) {
+      // The next 4 matches (API-Football, with the person's own key) instead of just the next one.
+      var list = el('div', 'fixtures', box);
+      for (var i = 0; i < fx.length && i < 4; i++) {
+        var f = fx[i], col = el('div', 'fixture', list);
+        el('img', 'badge', col).src = f.opponentBadge || '';
+        el('div', 'opp', col, (f.home ? tr('vs. ', 'vs. ', 'vs. ') : '@ ') + f.opponent);
+        el('div', 'when', col, matchDay(f.at) + ' · ' + Data.hour(f.at));
+      }
+    } else if (n.next) {
+      var row = el('div', 'row', box);
+      el('img', 'badge', row).src = n.next.opponentBadge || '';
+      var text = el('div', 'text', row);
+      el('div', 'match', text, (n.next.home ? tr('vs. ', 'vs. ', 'vs. ') : '@ ') + n.next.opponent);
+      el('div', 'when', text, matchDay(n.next.at) + ' · ' + Data.hour(n.next.at));
+    }
+    if (n.last) {
+      var kind = n.last.scoreFor > n.last.scoreAgainst ? 'win' : n.last.scoreFor < n.last.scoreAgainst ? 'loss' : 'draw';
+      var label = kind === 'win' ? tr('Venceu', 'Won', 'Ganó') : kind === 'loss' ? tr('Perdeu', 'Lost', 'Perdió') : tr('Empatou', 'Draw', 'Empató');
+      var row2 = el('div', 'row ' + kind, box);
+      el('img', 'badge', row2).src = n.last.opponentBadge || '';
+      var text2 = el('div', 'text', row2);
+      el('div', 'match', text2, label + ' ' + n.last.scoreFor + '-' + n.last.scoreAgainst + ' ' + (n.last.home ? tr('vs. ', 'vs. ', 'vs. ') : '@ ') + n.last.opponent);
+      el('div', 'when', text2, n.last.league);
+    }
+    if (n.form) {
+      var form = el('div', 'form', box);
+      for (var i = 0; i < n.form.length; i++) {
+        var c = n.form.charAt(i).toLowerCase();
+        el('span', c === 'w' ? 'win' : c === 'l' ? 'loss' : 'draw', form, c.toUpperCase());
+      }
     }
   }
 
@@ -670,7 +755,9 @@
   var saverOn = false, idleAt = Date.now(), saverIndex = 0, saverTimer = 0, SAVER_AFTER = 5 * 60000;
 
   function showSaver() {
-    var photos = Data.showcase().filter(function (p) { return p.backdrop && Data.appFor(p.app); });
+    var photos = familyPhotos.length
+      ? familyPhotos.map(function (url) { return {backdrop: url, title: '', local: true}; })
+      : Data.showcase().filter(function (p) { return p.backdrop && Data.appFor(p.app); });
     saverOn = true;
     var s = $('saver');
     s.innerHTML = '';
@@ -686,9 +773,10 @@
       var p = photos.length ? photos[saverIndex++ % photos.length] : null;
       var back = front === a ? b : a;
       if (p) {
-        back.style.backgroundImage = 'url(' + Data.image(p.backdrop, 'original') + ')';
+        back.style.backgroundImage = 'url(' + (p.local ? p.backdrop : Data.image(p.backdrop, 'original')) + ')';
         back.style.webkitTransform = back.style.transform = 'scale(1.0)';
         clock.lastChild.textContent = p.title;
+        setClass(clock.lastChild, 'hide', !p.title);
         setTimeout(function () {
           setClass(back, 'on', true);
           setClass(front, 'on', false);
@@ -747,6 +835,7 @@
     renderTop();
     cards = [];
     renderCards();
+    renderNacional();
     renderShelf();
     renderDrawer();
     renderClock();
@@ -778,6 +867,7 @@
 
   Data.onChange(function () {
     renderCards();
+    renderNacional();
     renderPanels();
     checkNight();
   });
@@ -796,6 +886,7 @@
   I18N.set(Prefs.language());
   fit();
   renderTop();
+  rotateBackdrop();
   loadApps(function () {
     renderAll();
     Data.refresh();
@@ -807,6 +898,7 @@
     if (!saverOn && !sheetOpen() && Date.now() - idleAt > SAVER_AFTER) showSaver();
     if (saverOn) tickSaverClock($('saver').querySelector('.clock'));
   }, 30000);
+  if (familyPhotos.length > 1) setInterval(rotateBackdrop, 10 * 60000);
 
   // For the browser preview and tests.
   window.FreeMyTV = {state: st, move: move, activate: activate, back: back, showSaver: showSaver, hideSaver: hideSaver, toast: toast};
